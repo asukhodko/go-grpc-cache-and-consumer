@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
 	"io/ioutil"
 	"log"
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cachingfetcher"
 	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/server"
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
 )
 
 const (
@@ -33,7 +34,8 @@ func main() {
 		log.Fatalf("failed to parse config: %v", err)
 	}
 
-	svc := service.NewService(config.URLs, config.MinTimeout, config.MaxTimeout, config.NumberOfRequests)
+	f := cachingfetcher.NewFetcher()
+	svc := service.NewService(f, config.URLs, config.MinTimeout, config.MaxTimeout, config.NumberOfRequests)
 	srv := server.NewServer(port, svc)
 
 	err = srv.Serve()

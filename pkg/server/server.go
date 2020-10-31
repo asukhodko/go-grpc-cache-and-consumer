@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -11,10 +12,12 @@ import (
 	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
 )
 
+// Server - интерфейс grpc-сервера
 type Server interface {
 	Serve() error
 }
 
+// NewServer конструирует сервер
 func NewServer(port string, service service.Service) Server {
 	s := &server{
 		port:       port,
@@ -47,13 +50,28 @@ func (s *server) Serve() error {
 }
 
 func (s *server) GetRandomDataStream(_ *pb.GetRandomDataStreamRequest, stream pb.RandomDataStreamer_GetRandomDataStreamServer) error {
-	ch := make(chan []byte)
-	go s.service.GetDataByChannel(ch)
+	ctx := stream.Context()
+	chData, chErr := s.service.GetDataWithChannel(ctx)
 
-	for data := range ch {
-		err := stream.Send(&pb.GetRandomDataStreamResponse{Data: data})
-		if err != nil {
-			return errors.Wrap(err, "stream.Send")
+	var data []byte
+	ok := true
+	for {
+		select {
+		case data, ok = <-chData:
+			if !ok {
+				break
+			}
+			err := stream.Send(&pb.GetRandomDataStreamResponse{Data: data})
+			if err != nil {
+				return errors.Wrap(err, "stream.Send")
+			}
+		case err := <-chErr:
+			err = errors.Wrap(err, "s.service.GetDataWithChannel")
+			fmt.Printf("[DEBUG] error: %v\n", err)
+			return err
+		}
+		if !ok {
+			break
 		}
 	}
 
