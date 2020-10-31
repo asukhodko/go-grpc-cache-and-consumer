@@ -7,4 +7,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/yaml.v2 v2.3.0
 )

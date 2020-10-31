@@ -9,16 +9,18 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	pb "github.com/asukhodko/go-grps-cache-and-consumer/pkg/proto/randomdatastream"
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
 )
 
 type Server interface {
 	Serve() error
 }
 
-func NewServer(port string) Server {
+func NewServer(port string, service service.Service) Server {
 	s := &server{
 		port:       port,
 		grpcServer: grpc.NewServer(),
+		service:    service,
 	}
 	reflection.Register(s.grpcServer)
 	pb.RegisterRandomDataStreamerServer(s.grpcServer, s)
@@ -29,6 +31,7 @@ type server struct {
 	pb.UnimplementedRandomDataStreamerServer
 	port       string
 	grpcServer *grpc.Server
+	service    service.Service
 }
 
 func (s *server) Serve() error {
