@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net"
 
 	"github.com/pkg/errors"
@@ -48,21 +47,14 @@ func (s *server) Serve() error {
 }
 
 func (s *server) GetRandomDataStream(_ *pb.GetRandomDataStreamRequest, stream pb.RandomDataStreamer_GetRandomDataStreamServer) error {
-	log.Println("Invoked.")
+	ch := make(chan []byte)
+	go s.service.GetDataByChannel(ch)
 
-	err := stream.Send(&pb.GetRandomDataStreamResponse{Data: "message 1"})
-	if err != nil {
-		return errors.Wrap(err, "stream.Send")
-	}
-
-	err = stream.Send(&pb.GetRandomDataStreamResponse{Data: "message 2"})
-	if err != nil {
-		return errors.Wrap(err, "stream.Send")
-	}
-
-	err = stream.Send(&pb.GetRandomDataStreamResponse{Data: "message 3"})
-	if err != nil {
-		return errors.Wrap(err, "stream.Send")
+	for data := range ch {
+		err := stream.Send(&pb.GetRandomDataStreamResponse{Data: data})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
 	}
 
 	return nil
