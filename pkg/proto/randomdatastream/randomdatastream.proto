@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package randomdatastream;
+
+service RandomDataStreamer {
+  rpc GetRandomDataStream (GetRandomDataStreamRequest) returns (stream string) {}
+}
+
+message GetRandomDataStreamRequest {}
