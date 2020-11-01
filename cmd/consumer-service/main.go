@@ -2,19 +2,20 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
+	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	pb "github.com/asukhodko/go-grps-cache-and-consumer/pkg/proto/randomdatastream"
 )
 
 const (
-	address = "localhost:50051"
+	address        = "localhost:50051"
+	timeoutSeconds = 2
+	routines       = 10
 )
 
 func main() {
@@ -25,28 +26,39 @@ func main() {
 	defer conn.Close()
 	c := pb.NewRandomDataStreamerClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	wg := sync.WaitGroup{}
+	wg.Add(routines)
+	for id := 1; id <= routines; id++ {
+		go func(id int) {
+			defer wg.Done()
+			receiveData(c, id)
+		}(id)
+	}
+	wg.Wait()
+}
+
+func receiveData(c pb.RandomDataStreamerClient, id int) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutSeconds*time.Second)
 	defer cancel()
+
 	r, err := c.GetRandomDataStream(ctx, &pb.GetRandomDataStreamRequest{})
 	if err != nil {
-		log.Fatalf("could not call GetRandomDataStream: %v", err)
+		log.Printf("[%d] could not call GetRandomDataStream: %v\n", id, err)
+		return
 	}
-	for {
+	for n := 1; ; n++ {
 		msg, err := r.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			err = errors.Wrap(err, "r.Recv")
-			fmt.Println(err)
+			log.Printf("[%d] r.Recv: %v\n", id, err)
 			return
 		}
 		if msg == nil {
-			err = errors.New("response message is nil")
-			fmt.Println(err)
+			log.Printf("[%d] response message is nil\n", id)
 			return
 		}
-		fmt.Printf("Received: %s\n", msg.Data)
+		log.Printf("[%d] Received stream %d (%d bytes).\n", id, n, len(msg.Data))
 	}
-	log.Printf("Response: %v", r)
 }
