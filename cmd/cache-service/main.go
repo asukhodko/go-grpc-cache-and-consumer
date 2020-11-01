@@ -6,14 +6,16 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cachingfetcher"
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cache"
 	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/server"
 	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/urlfetcher"
 )
 
 const (
 	port           = ":50051"
 	configFilename = "config.yml"
+	redisAddress   = "localhost:6379"
 )
 
 func main() {
@@ -34,8 +36,9 @@ func main() {
 		log.Fatalf("failed to parse config: %v", err)
 	}
 
-	f := cachingfetcher.NewFetcher()
-	svc := service.NewService(f, config.URLs, config.MinTimeout, config.MaxTimeout, config.NumberOfRequests)
+	f := urlfetcher.NewFetcher()
+	c := cache.NewCache(config.MinTimeout, config.MaxTimeout, redisAddress)
+	svc := service.NewService(f, c, config.URLs, config.NumberOfRequests)
 	srv := server.NewServer(port, svc)
 
 	err = srv.Serve()

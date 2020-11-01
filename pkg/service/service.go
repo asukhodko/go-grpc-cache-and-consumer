@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"sync"
 
 	"github.com/pkg/errors"
 
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cachingfetcher"
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cache"
+	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/urlfetcher"
 )
 
 // Service - интерфейс сервиса
@@ -16,22 +18,20 @@ type Service interface {
 }
 
 // NewService конструирует сервис
-func NewService(fetcher cachingfetcher.Fetcher, urls []string, minTimeout int, maxTimeout int, numberOfRequests int) Service {
+func NewService(fetcher urlfetcher.Fetcher, cache cache.Cache, urls []string, numberOfRequests int) Service {
 	return &service{
 		fetcher:          fetcher,
+		cache:            cache,
 		urls:             urls,
-		minTimeout:       minTimeout,
-		maxTimeout:       maxTimeout,
 		numberOfRequests: numberOfRequests,
 	}
 }
 
 type service struct {
+	fetcher          urlfetcher.Fetcher
+	cache            cache.Cache
 	urls             []string
-	minTimeout       int
-	maxTimeout       int
 	numberOfRequests int
-	fetcher          cachingfetcher.Fetcher
 }
 
 func (s *service) GetDataWithChannel(ctx context.Context) (<-chan []byte, <-chan error) {
@@ -44,10 +44,22 @@ func (s *service) GetDataWithChannel(ctx context.Context) (<-chan []byte, <-chan
 			go func() {
 				defer wg.Done()
 				url := s.selectRandomURL()
-				data, err := s.fetcher.Fetch(ctx, url)
+				data, err := s.cache.Get(ctx, url)
 				if err != nil {
-					chErr <- errors.Wrap(err, "s.cachingFetcher.Fetch")
-					return
+					log.Printf("[WARN] error get from cache for %s: %v", url, err)
+					data, err = nil, nil
+				}
+				if len(data) == 0 {
+					data, err = s.fetcher.Fetch(ctx, url)
+					if err != nil {
+						chErr <- errors.Wrap(err, "s.cachingFetcher.Fetch")
+						return
+					}
+					err = s.cache.Set(ctx, url, data)
+					if err != nil {
+						log.Printf("[WARN] error set to cache for %s: %v", url, err)
+						err = nil
+					}
 				}
 				chData <- data
 			}()

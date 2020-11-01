@@ -1,4 +1,4 @@
-package cachingfetcher
+package urlfetcher
 
 import (
 	"context"

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"log"
 	"net"
 
 	"github.com/pkg/errors"
@@ -67,7 +67,7 @@ func (s *server) GetRandomDataStream(_ *pb.GetRandomDataStreamRequest, stream pb
 			}
 		case err := <-chErr:
 			err = errors.Wrap(err, "s.service.GetDataWithChannel")
-			fmt.Printf("[DEBUG] error: %v\n", err)
+			log.Printf("[DEBUG] error: %v\n", err)
 			return err
 		}
 		if !ok {
