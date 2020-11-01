@@ -14,8 +14,8 @@ import (
 
 const (
 	address        = "localhost:50051"
-	timeoutSeconds = 2
-	routines       = 10
+	timeoutSeconds = 30
+	routines       = 1000
 )
 
 func main() {

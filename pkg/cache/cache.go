@@ -2,15 +2,17 @@ package cache
 
 import (
 	"context"
+	"log"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
-	"math/rand"
-	"time"
 )
 
 type Cache interface {
-	Get(ctx context.Context, key string) ([]byte, error)
-	Set(ctx context.Context, key string, data []byte) error
+	GetOrSetWhenNotExists(ctx context.Context, key string, f func() ([]byte, error)) ([]byte, error)
 }
 
 func NewCache(minTimeoutSec, maxTimeoutSec int, redisAddress string) Cache {
@@ -28,25 +30,41 @@ type cache struct {
 	rdb           *redis.Client
 	minTimeoutSec int
 	maxTimeoutSec int
+	mutex         sync.Mutex
+	keyMutexes    sync.Map
 }
 
-func (c *cache) Get(ctx context.Context, key string) ([]byte, error) {
+func (c *cache) GetOrSetWhenNotExists(ctx context.Context, key string, f func() ([]byte, error)) ([]byte, error) {
+	c.mutex.Lock()
+	m, ok := c.keyMutexes.Load(key)
+	if !ok {
+		m = &sync.Mutex{}
+		c.keyMutexes.Store(key, m)
+	}
+	c.mutex.Unlock()
+
+	m.(*sync.Mutex).Lock()
+	defer m.(*sync.Mutex).Unlock()
+
 	data, err := c.rdb.Get(ctx, key).Bytes()
-	if err == redis.Nil {
-		data, err = nil, nil
-	}
 	if err != nil {
-		return nil, errors.Wrap(err, "c.rdb.Get")
-	}
-	return data, nil
-}
+		if err != redis.Nil {
+			log.Printf("[WARN] error get from cache for %s: %v", key, err)
+		}
+		data, err = f()
+		if err != nil {
+			return nil, errors.Wrap(err, "f")
+		}
 
-func (c *cache) Set(ctx context.Context, key string, data []byte) error {
-	expSeconds := c.minTimeoutSec + rand.Intn(c.maxTimeoutSec-c.minTimeoutSec)
-	exp := time.Duration(expSeconds) * time.Second
-	err := c.rdb.Set(ctx, key, data, exp).Err()
-	if err != nil {
-		return errors.Wrap(err, "c.rdb.Set")
+		expSeconds := c.minTimeoutSec + rand.Intn(c.maxTimeoutSec-c.minTimeoutSec)
+		exp := time.Duration(expSeconds) * time.Second
+		err := c.rdb.Set(ctx, key, data, exp).Err()
+		if err != nil {
+			return nil, errors.Wrap(err, "c.rdb.Set")
+		}
+
+		return data, nil
 	}
-	return nil
+
+	return data, nil
 }
