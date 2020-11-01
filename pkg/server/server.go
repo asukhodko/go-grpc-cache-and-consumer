@@ -51,7 +51,7 @@ func (s *server) Serve() error {
 
 func (s *server) GetRandomDataStream(_ *pb.GetRandomDataStreamRequest, stream pb.RandomDataStreamer_GetRandomDataStreamServer) error {
 	ctx := stream.Context()
-	chData, chErr := s.service.GetDataWithChannel(ctx)
+	chData, chErr := s.service.GetDataWithinChannel(ctx)
 
 	var data []byte
 	ok := true
@@ -66,7 +66,7 @@ func (s *server) GetRandomDataStream(_ *pb.GetRandomDataStreamRequest, stream pb
 				return errors.Wrap(err, "stream.Send")
 			}
 		case err := <-chErr:
-			err = errors.Wrap(err, "s.service.GetDataWithChannel")
+			err = errors.Wrap(err, "s.service.GetDataWithinChannel")
 			log.Printf("[DEBUG] error: %v\n", err)
 			return err
 		}

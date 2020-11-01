@@ -32,6 +32,9 @@ type cache struct {
 
 func (c *cache) Get(ctx context.Context, key string) ([]byte, error) {
 	data, err := c.rdb.Get(ctx, key).Bytes()
+	if err == redis.Nil {
+		data, err = nil, nil
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "c.rdb.Get")
 	}
