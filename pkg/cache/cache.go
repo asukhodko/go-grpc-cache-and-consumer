@@ -23,6 +23,7 @@ func NewCache(minTimeoutSec, maxTimeoutSec int, redisAddress string) Cache {
 		rdb:           rdb,
 		minTimeoutSec: minTimeoutSec,
 		maxTimeoutSec: maxTimeoutSec,
+		keyMutexes:    make(map[string]*sync.Mutex),
 	}
 }
 
@@ -31,20 +32,20 @@ type cache struct {
 	minTimeoutSec int
 	maxTimeoutSec int
 	mutex         sync.Mutex
-	keyMutexes    sync.Map
+	keyMutexes    map[string]*sync.Mutex
 }
 
 func (c *cache) GetOrSetWhenNotExists(ctx context.Context, key string, f func() ([]byte, error)) ([]byte, error) {
 	c.mutex.Lock()
-	m, ok := c.keyMutexes.Load(key)
+	m, ok := c.keyMutexes[key]
 	if !ok {
 		m = &sync.Mutex{}
-		c.keyMutexes.Store(key, m)
+		c.keyMutexes[key] = m
 	}
 	c.mutex.Unlock()
 
-	m.(*sync.Mutex).Lock()
-	defer m.(*sync.Mutex).Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	data, err := c.rdb.Get(ctx, key).Bytes()
 	if err != nil {
