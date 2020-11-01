@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -13,13 +14,18 @@ import (
 )
 
 const (
-	address        = "localhost:50051"
-	timeoutSeconds = 30
-	routines       = 1000
+	defaultServerAddress = "localhost:50051"
+	timeoutSeconds       = 180
+	routines             = 1000
 )
 
 func main() {
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	serverAddress := os.Getenv("SERVER_ADDRESS")
+	if serverAddress == "" {
+		serverAddress = defaultServerAddress
+	}
+
+	conn, err := grpc.Dial(serverAddress, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

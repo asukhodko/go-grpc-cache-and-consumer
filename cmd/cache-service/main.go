@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"os"
 
 	"gopkg.in/yaml.v2"
 
@@ -13,12 +14,16 @@ import (
 )
 
 const (
-	port           = ":50051"
+	defaultPort    = ":50051"
 	configFilename = "config.yml"
 	redisAddress   = "localhost:6379"
 )
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
 
 	configBody, err := ioutil.ReadFile(configFilename)
 	if err != nil {
@@ -41,6 +46,7 @@ func main() {
 	svc := service.NewService(f, c, config.URLs, config.NumberOfRequests)
 	srv := server.NewServer(port, svc)
 
+	log.Printf("Starting server on port %s.\n", port)
 	err = srv.Serve()
 	if err != nil {
 		log.Fatalf("failed to serve: %v", err)
