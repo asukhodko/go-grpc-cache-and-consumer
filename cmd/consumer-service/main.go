@@ -10,7 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/asukhodko/go-grps-cache-and-consumer/pkg/proto/randomdatastream"
+	pb "github.com/asukhodko/go-grpc-cache-and-consumer/pkg/proto/randomdatastream"
 )
 
 const (

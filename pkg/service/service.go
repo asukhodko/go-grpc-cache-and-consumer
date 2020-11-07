@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cache"
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/urlfetcher"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/cache"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/urlfetcher"
 )
 
 // Service - интерфейс сервиса

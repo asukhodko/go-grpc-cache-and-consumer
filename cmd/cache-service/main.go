@@ -7,10 +7,10 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/cache"
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/server"
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/urlfetcher"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/cache"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/server"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/service"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/urlfetcher"
 )
 
 const (

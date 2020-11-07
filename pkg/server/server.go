@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	pb "github.com/asukhodko/go-grps-cache-and-consumer/pkg/proto/randomdatastream"
-	"github.com/asukhodko/go-grps-cache-and-consumer/pkg/service"
+	pb "github.com/asukhodko/go-grpc-cache-and-consumer/pkg/proto/randomdatastream"
+	"github.com/asukhodko/go-grpc-cache-and-consumer/pkg/service"
 )
 
 // Server - интерфейс grpc-сервера

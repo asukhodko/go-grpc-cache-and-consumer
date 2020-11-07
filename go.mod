@@ -1,4 +1,4 @@
-module github.com/asukhodko/go-grps-cache-and-consumer
+module github.com/asukhodko/go-grpc-cache-and-consumer
 
 go 1.15
 
